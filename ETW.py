@@ -6,30 +6,10 @@ __version__ = "0.1.0"
 __maintainer__ = "Marchal Florent"
 __email__ = "florent.marchal@etu.umontpellier.fr"
 __status__ = "Development"
-
 import Rotor
-import Errors
 
 
-class Reflector(Rotor.Rotor):
-    """A Modified Rotor that assure that if the result of forward_reading(value) give value2 then
-    backward_reading(value2) will gave value."""
-
-    def wire_inspection(self, wire: list[int] or tuple[int] or dict[int]) -> dict[int:int]:
-        """Internal Function. Return a wire that can be used by a Rotor.
-        A wire is a dict that respect the following rules:
-            A: All keys are integer between 0 and dictionary's length.
-            B: All values are also keys
-            C: All keys are also values
-            D: All keys / items couples have to also be items / keys couples.
-        :return dict: A functional dictionary"""
-        super().wire_inspection(wire)
-        for key, items in wire.items():
-            if wire[items] != key:
-                raise Errors.AsymmetricWire("Reflectors' wire should have symmetric key / item couples."
-                                            f"'{key}'→'{items}' then '{items}' should gave '{key}'")
-        return wire
-
+class ETW(Rotor.Rotor):
     @property
     def rotation(self) -> str:
         """How this rotor can turn

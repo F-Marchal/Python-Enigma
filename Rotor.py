@@ -9,13 +9,18 @@ Review log :
 19/11/2023 → File status set to "Production"
 23/11/2023 → new method : can_rotate
 28/11/2023 → <Rotor.rotation> can be set using None.
+15/12/2023 → <wire_inspection> isn't a static method anymore.
+           → <reverse_wire> is now <wire> but with their key / values couples reversed. (As it should be)
+           → Add <rapid_wire> function.
+16/12/2023 → Convert <notches> to <turnovers> in order to respect rotor's nomenclature.
+           → Add __str__ method.
 """
 
 __author__ = "Marchal Florent"
 __copyright__ = "Copyright 2023, Marchal Florent"
 __credits__ = ["Marchal Florent", ]
 __license__ = "CC BY-NC-SA"
-__version__ = "1.0.0"
+__version__ = "1.3.0"
 __maintainer__ = "Marchal Florent"
 __email__ = "florent.marchal@etu.umontpellier.fr"
 __status__ = "Production"
@@ -34,7 +39,7 @@ class Rotor:
     reversed_wire (dict)
     offset (int)
     position (int)
-    notches (set) and overflows (int)
+    turnover (set) and overflows (int)
     rotation (str)
     length (int)
     modifier (int)
@@ -44,7 +49,7 @@ class Rotor:
     def __init__(self, wire: list[int] or tuple[int] or dict[int],
                  offset: int = 0,
                  position: int = 0,
-                 notches: int or tuple[int] or list[int] or set[int] = None,
+                 turnovers: int or tuple[int] or list[int] or set[int] = None,
                  overflows: int or tuple[int] or list[int] or set[int] = None,
                  rotation: str = None,
                  description=None,
@@ -67,13 +72,13 @@ class Rotor:
             Shift the <wire>'s key / value combinations by n.
             Must be an integer between 0 and <wire>'s length (len(<wire>)).
 
-        :param list, tuple, set notches:
+        :param list, tuple, set turnovers:
             /!\\ Overwrite overflows
             When Rotor's position QUIT a notch the next rotor has his position changed.
             Must be a list or a tuple or a set of integer between 0 and <wire>'s length (len(<wire>)).
 
         :param list, tuple, set overflows:
-            /!\\ Overwrite by notches /!\\
+            /!\\ Overwrite by turnover /!\\
             When Rotor's position REACH an overflows the next rotor has his position changed.
             Must be a list or a tuple or a set of integer between 0 and <wire>'s length (len(<wire>)).
 
@@ -87,9 +92,9 @@ class Rotor:
         :param description: A description of this Rotor. Generally historical or usage information.
         """
         # Wire
-        wire = self._wire_inspection(wire)
+        wire = self.wire_inspection(wire)
         self._wire = wire
-        self._reverse_wire = {value: key for value, key in wire.items()}
+        self._reverse_wire = {key: value for value, key in wire.items()}
 
         # Other
         self._length = len(wire)
@@ -98,41 +103,46 @@ class Rotor:
         self.rotation = rotation
         self.description = description
         
-        # Notches
-        self._notches = set()
-        if notches:
-            self.notches = notches
+        # turnovers
+        self._turnovers = set()
+        if turnovers:
+            self.turnovers = turnovers
         elif overflows:
             self.overflows = overflows
         else:
-            self.notches = None
+            self.turnovers = None
 
     def __copy__(self):
         """Return a new independent rotor based on this one"""
         type_ = self.__class__
         return type_(**self.get_full_configuration())
 
+    def __str__(self):
+        if isinstance(self.description, str):
+            return self.description
+        return super().__str__()
+
     # normal methods
-    def set_notches(self, *values: int):
+    def set_turnovers(self, *values: int):
         """/!\\ Overwrite overflows /!\\
-        Change the set of values used as notches.
+        Change the set of values used as turnovers.
         :param int values:
-            Values now used as notches. They have to be integer greater or equal 0 and lower than <self._length>
+            Values now used as turnovers. They have to be integer greater or equal 0 and lower than <self._length>
         :raise ValueError: When values are not integer greater or equal 0 and lower than <self._length>
         """
         for item in values:
             if not self.is_in_range(item):
                 raise ValueError(f"Integer greater or equal to 0 and lower than <self._length> expected. Got : {item}")
 
-        self._notches.clear()
-        self._notches |= set(values)
+        self._turnovers.clear()
+        self._turnovers |= set(values)
 
     def set_overflow(self, *values: int):
-        """/!\\ Overwrite notches /!\\
-        Change the set of values used as overflows. This is function call <self.set_notches>
+        """/!\\ Overwrite turnovers /!\\
+        Change the set of values used as overflows. This is function call <self.set_turnovers>
         :param int values:
-            Values now used as notches. They have to be integer greater or equal 0 and lower than <self._length>"""
-        self.set_notches(*[value - 1 if isinstance(value, int) else value for value in values])
+            Values now used as turnovers. They have to be integer greater or equal 0 and lower than <self._length>"""
+        self.set_turnovers(*[value - 1 if isinstance(value, int) else value for value in values])
 
     def forward_reading(self, value: int):
         """Scramble a value with the <self.wire>. Correspond to how values are treat between the keyboard and the
@@ -158,7 +168,7 @@ class Rotor:
             you might want to simply set <self.position> to the value that you want.
         :return bool: Do this rotor QUIT a notch.
         """
-        bool_ = self._position in self._notches
+        bool_ = self._position in self._turnovers
         if self._rotation == "normal":
             self.position += 1
         elif self._rotation == "reversed":
@@ -178,7 +188,7 @@ class Rotor:
         return isinstance(value, int) and 0 <= value < self._length
 
     def configure(self, offset=None, position: int = None, rotation: str = None,
-                  notches: int or tuple[int] or list[int] or set[int] = None,
+                  turnovers: int or tuple[int] or list[int] or set[int] = None,
                   overflows: int or tuple[int] or list[int] or set[int] = None,
                   description=None):
         """Modify the value of a number of attributes. Use it in conjunction with <self.get_configuration> to restore
@@ -192,13 +202,13 @@ class Rotor:
             Shift the <wire>'s key / value combinations by n.
             Must be an integer between 0 and <wire>'s length (len(<wire>)).
 
-        :param list, tuple, set notches:
+        :param list, tuple, set turnovers:
             /!\\ Overwrite overflows
             When Rotor's position QUIT a notch the next rotor has his position changed.
             Must be a list or a tuple or a set of integer between 0 and <wire>'s length (len(<wire>)).
 
         :param list, tuple, set overflows:
-            /!\\ Overwrite by notches /!\\
+            /!\\ Overwrite by turnovers /!\\
             When Rotor's position REACH an overflows the next rotor has his position changed.
             Must be a list or a tuple or a set of integer between 0 and <wire>'s length (len(<wire>)).
 
@@ -213,7 +223,7 @@ class Rotor:
         """
         if offset: self.offset = offset
         if position: self.position = position
-        if notches: self.notches = notches
+        if turnovers: self.turnovers = turnovers
         elif overflows: self.overflows = overflows
         if rotation: self.rotation = rotation
         if description: self.description = description
@@ -224,7 +234,7 @@ class Rotor:
         return {
             "position": self.offset,
             "offset": self.position,
-            "notches": self.notches,
+            "turnovers": self.turnovers,
             "rotation": self.rotation
         }
 
@@ -243,8 +253,7 @@ class Rotor:
         return self.__copy__()
 
     # private methods
-    @staticmethod
-    def _wire_inspection(wire: list[int] or tuple[int] or dict[int]) -> dict[int:int]:
+    def wire_inspection(self, wire: list[int] or tuple[int] or dict[int]) -> dict[int:int]:
         """Internal Function. Return a wire that can be used by a Rotor.
         A wire is a dict that respect the following rules:
             A: All keys are integer between 0 and dictionary's length.
@@ -366,33 +375,33 @@ class Rotor:
         self._rotation = value.lower()
 
     @property
-    def notches(self) -> set[int]:
-        """:return set: a set of notches currently used by this rotor.
+    def turnovers(self) -> set[int]:
+        """:return set: a set of turnovers currently used by this rotor.
         When Rotor's position QUIT a notch the next rotor has his
         position changed. Must be a list or a tuple or a set of integer between 0 and <wire>'s length (len(<wire>))."""
-        return self._notches.copy()
+        return self._turnovers.copy()
 
-    @notches.setter
-    def notches(self, value: int or tuple[int] or list[int] or set[int]):
+    @turnovers.setter
+    def turnovers(self, value: int or tuple[int] or list[int] or set[int]):
         """/!\\ Overwrite overflows /!\\
-        Change the set of values used as notches. See <self.set_notches> for more information.
+        Change the set of values used as turnovers. See <self.set_turnovers> for more information.
         :param int, tuple, list, set value:
             An integer or a number of integer greater or equal to 0 and lower than Rotor's length"""
         if value is None:
             value = set()
-        self.set_notches(*value) if isinstance(value, (tuple, set, list)) else [value]
+        self.set_turnovers(*value) if isinstance(value, (tuple, set, list)) else [value]
 
     @property
     def overflows(self):
         """:return set: a set of overflows currently used by this rotor.
         When Rotor's position REACH a notch the next rotor has his
         position changed. Must be a list or a tuple or a set of integer between 0 and <wire>'s length (len(<wire>))."""
-        return {value + 1 for value in self._notches}
+        return {value + 1 for value in self._turnovers}
 
     @overflows.setter
     def overflows(self, value: int or tuple[int] or list[int] or set[int]):
-        """/!\\ Overwrite notches /!\\
-        Change the set of values used as overflows. See <self.set_notches> for more information.
+        """/!\\ Overwrite turnovers /!\\
+        Change the set of values used as overflows. See <self.set_turnovers> for more information.
         :param int, tuple, list, set value:
             An integer or a number of integer greater or equal to 0 and lower than Rotor's length"""
         if value is None:
@@ -409,27 +418,53 @@ class Rotor:
         """A description of this Rotor. Generally historical or usage information."""
         self._description = value
 
+
+def rapid_wire(*values, alphabet=None) -> dict:
+    """A function to give a rapid way of creating a wire based on an alphabet.
+     It uses an alphabet (which is a reference for the 'normal' order (eg: ABCD...) to convert the order
+     of gave values into a wire.
+     EG : rapid_wire('B', 'A', 'C', alphabet="ABC") → {0: 1, 1: 0, 2: 2,}
+    :param values:      A number of values. Values gave can not be repeated.
+    :param str, list, tuple alphabet:    A Reference that contain the exact same values as <values> in
+                                         the exact same amount
+    :return:
+    """
+    if alphabet is None:
+        alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+    if not isinstance(alphabet, (str, list, tuple)):
+        raise TypeError(f"Alphabet should be None, str, list or tuple. Got {type(alphabet)} ({alphabet}).")
+    if len(values) != len(set(values)):
+        raise ValueError("At least one value is repeated inside <values>.")
+    if len(values) != len(alphabet):
+        raise IndexError("Alphabet and values should have the same number of values.")
+    if set(alphabet) != set(values):
+        raise KeyError("Alphabet and values should be composed by the same values.")
+
+    return {i: alphabet.index(c) for i, c in enumerate(values)}
+
+
 if __name__ == '__main__':
     #  --- --- Creation of IC rotor from commercial Enigma at the position "D" and with an offset of 5 --- ---
     #  ---  Wire creation ---
-    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    alphabet_ = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     wire_ic = "DMTWSILRUYQNKFEJCAZBPGXOHV"
 
     # Translate letters in integer using their place inside the alphabet
-    wire_ic = [alphabet.index(char) for char in wire_ic]
+    wire_ic = [alphabet_.index(char) for char in wire_ic]
 
     # --- Init the rotor ---
-    ic = Rotor(wire=wire_ic, notches={alphabet.index("Q")}, position=alphabet.index("D"), offset=5)
+    ic = Rotor(wire=wire_ic, turnovers={alphabet_.index("Q")}, position=alphabet_.index("D"), offset=5)
 
     #  --- --- Creation of UKWA reflector --- ---
     #  ---  Wire creation ---
-    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    alphabet_ = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     letter_swap = "AY BR CU DH EQ FS GL IP JX KN MO TZ VW"
 
     # Translate letters in integer using their place inside the alphabet
     letter_swap = letter_swap.split(" ")
-    ukw_wire = {alphabet.index(a): alphabet.index(b) for a, b in letter_swap}
-    ukw_wire.update({alphabet.index(b): alphabet.index(a) for a, b in letter_swap})
+    ukw_wire = {alphabet_.index(a): alphabet_.index(b) for a, b in letter_swap}
+    ukw_wire.update({alphabet_.index(b): alphabet_.index(a) for a, b in letter_swap})
 
     # --- Init the reflector ---
     ukw_a = Rotor(wire=ukw_wire, rotation="without")

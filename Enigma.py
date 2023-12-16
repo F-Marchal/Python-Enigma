@@ -1,13 +1,18 @@
-# A TESTER : PlugBoard, Encoding
 # A AJOUTER : Properties
+# Donner un ordre aux parties mobiles
+# getKey / SetKey
 # A AJOUTER : fast_encode
 
 import timeit
 from Rotor import Rotor
+from Reflector import Reflector
 from Errors import RepeatedValueError, MissingValueError, NoRotorError, NoReflectorError
+from ETW import ETW
+
 
 class EnigmaMachine:
-    def __init__(self, value_number: int = 26, translator: dict or list or tuple = None):
+    def __init__(self, value_number: int = 26, translator: dict or list or tuple = None, description=None,
+                 reflector: Rotor = None, etw: Rotor = None):
         if not isinstance(value_number, int) or value_number <= 1:
             raise ValueError(f"The number of value should be an integer greater than 1. Current <value_number> : "
                              f"{value_number}")
@@ -17,14 +22,23 @@ class EnigmaMachine:
         self._reversed_translator = {}
         self._plugboard = {}
         self.translator = translator if translator is not None else []
-
         self._rotors: list[Rotor] = []
+        self.description = description
+
         self._reflector = None
+        self.set_reflector(reflector)
+        self._etw = None
+        self.set_etw(etw)
+
+    def __str__(self):
+        if isinstance(self.description, str):
+            return self.description
+        return super().__str__()
 
     # cryptographic related methods
-    def encode(self, *values, is_a_decoding=False, translate_output: bool = True) -> iter:
+    def encode(self, value, translate_output: bool = True, is_a_decoding=False):
         """Do the full process of encoding (or decoding). Return an iterator.
-        :param values:                  Values that you want to encode. Could be values in the translator or integer
+        :param value:                  Values that you want to encode. Could be values in the translator or integer
                                             greater or equal to o and greater than <self.length>
         :param bool is_a_decoding:      Only if you use a Rotor instead of a Reflector as <self.reflector>.
                                            Specify if you want to decode or encode values.
@@ -37,33 +51,32 @@ class EnigmaMachine:
         if self._reflector is None:
             raise NoReflectorError("No reflector load in this machine. Please load at least one reflector.")
 
-        for value in values:
-            # Turn all rotor according to notches
-            value = self.translate_in_integer(value)
+        # Turn all rotor according to turnovers
+        value = self.translate_in_integer(value)
 
-            # Read plugboard
-            value = self._read_plugboard(value)
+        # Read plugboard
+        value = self._read_plugboard(value)
 
-            # Turn rotors
-            self.turn()
+        # Turn rotors
+        self.turn()
 
-            # read forward
-            value = self._read_forward(value)
+        # read forward
+        value = self._read_forward(value)
 
-            # reflect value
-            value = self._read_reflector(value, is_a_decoding)
+        # reflect value
+        value = self._read_reflector(value, is_a_decoding)
 
-            # read backward
-            value = self._read_backward(value)
+        # read backward
+        value = self._read_backward(value)
 
-            # Read plugboard
-            value = self._read_plugboard(value)
+        # Read plugboard
+        value = self._read_plugboard(value)
 
-            # translation
-            if translate_output:
-                value = self.translate_number(value)
+        # translation
+        if translate_output:
+            value = self.translate_number(value)
 
-            yield value
+        return value
 
     def _read_plugboard(self, index: int):
         if index in self._plugboard:
@@ -76,6 +89,7 @@ class EnigmaMachine:
             return self.translate_number(plug_result)
         return value
 
+
     def turn(self):
         i = 0
         item_that_can_turn = self.get_non_stationary_items()
@@ -84,8 +98,10 @@ class EnigmaMachine:
             i += 1
 
     def _read_forward(self, index: int):
+        index = self._etw.forward_reading(index)
         for rotors in self._rotors[::-1]:
             index = rotors.forward_reading(index)
+
         return index
 
     def read_forward(self, value, translate_result: bool = True):
@@ -98,6 +114,7 @@ class EnigmaMachine:
     def _read_backward(self, index: int):
         for rotors in self._rotors:
             index = rotors.backward_reading(index)
+        index = self._etw.backward_reading(index)
         return index
 
     def read_backward(self, value, translate_result: bool = True):
@@ -144,6 +161,9 @@ class EnigmaMachine:
             raise TypeError(f"Rotor type expected : Got {type(rotor)}")
         elif rotor in self._rotors:
             raise KeyError(f"{rotor} is already loaded.")
+        elif not self.is_compatible(rotor):
+            raise ValueError(f"Incompatible rotor ({rotor}) : rotor length ({rotor.length}) != machine "
+                             f"length {self._length}")
         self._rotors.append(rotor)
 
     def remove_rotor(self, rotor: Rotor or int):
@@ -162,7 +182,21 @@ class EnigmaMachine:
         return self._rotors.index(rotor)
 
     def set_reflector(self, reflector: Rotor):
+        if reflector is None:
+            pass
+        elif not self.is_compatible(reflector):
+            raise ValueError(f"Incompatible rotor ({reflector}) : rotor length ({reflector.length}) != machine "
+                             f"length {self._length}")
+
         self._reflector = reflector
+
+    def set_etw(self, etw: Rotor):
+        if etw is None:
+            etw = ETW(wire=tuple(range(0, self._length)))
+        if not self.is_compatible(etw):
+            raise ValueError(f"Incompatible rotor ({etw}) : rotor length ({etw.length}) != machine "
+                             f"length {self._length}")
+        self._etw = etw
 
     def _rotor_index_finder(self, rotor_index: int or Rotor):
         if isinstance(rotor_index, Rotor):
@@ -180,11 +214,11 @@ class EnigmaMachine:
         return rotor_index
 
     def get_non_stationary_items(self):
-        initial_list = [*self._rotors, self._reflector] if self._reflector else self._rotors
+        initial_list = [*self._rotors[::-1], self._reflector] if self._reflector else self._rotors
         return [item for item in initial_list if item.can_rotate()]
 
     def get_stationary_items(self):
-        initial_list = [*self._rotors, self._reflector] if self._reflector else self._rotors
+        initial_list = [*self._rotors[::-1], self._reflector] if self._reflector else self._rotors
         return [item for item in initial_list if not item.can_rotate()]
 
     # Plugboard
@@ -242,6 +276,9 @@ class EnigmaMachine:
             B: each values inside <translator> has to be unique
         """
         # --- --- Type verifications --- ---
+        if isinstance(translator, str):
+            translator = list(translator)
+
         if isinstance(translator, (list, tuple)):
             if len(set(translator)) != len(translator):
                 # Assure that <translator>'s values are unique.
@@ -312,6 +349,16 @@ class EnigmaMachine:
         """Do a <value> is an integer that can be used by this machine."""
         return isinstance(value, int) and 0 <= value < self._length
 
+    def is_compatible(self, rotor: Rotor) -> bool:
+        """Do a <rotor> can be used by this machine."""
+        return isinstance(rotor, Rotor) and rotor.length == self._length
+
+    def get_key(self):
+        result = ""
+        for r in self._rotors:
+            result += self.translate_number(r.position)
+        print(result)
+
     @property
     def length(self) -> int:
         """How many values are inside machine's Rotors."""
@@ -333,36 +380,29 @@ class EnigmaMachine:
         """A dict that say how items are translated in integer."""
         return self._reversed_translator.copy()
 
+    @property
+    def description(self):
+        """A description of this Machine. Generally contain historical or usage information."""
+        return self._description
+
+    @description.setter
+    def description(self, value):
+        """A description of this Machine. Generally historical or usage information."""
+        self._description = value
+
 if __name__ == '__main__':
-    EM = EnigmaMachine(4, translator={
-        0: "a",
-        1: "b",
-        2: "d",
-        3: "c",
+    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    EM = EnigmaMachine(26, translator={i: c for i, c in enumerate(alphabet)})
+    I = Rotor(wire={i: alphabet.index(c) for i, c in enumerate("EKMFLGDQVZNTOWYHXUSPAIBRCJ")})
+    II = Rotor(wire={i: alphabet.index(c) for i, c in enumerate("AJDKSIRUXBLHWTMCQGZNPYFVOE")}, offset=16)
+    III = Rotor(wire={i: alphabet.index(c) for i, c in enumerate("BDFHJLCPRTXVZNYEIWGAKMUSQO")}, position=25)
+    UKW = Reflector(wire={i: alphabet.index(c) for i, c in enumerate("YRUHQSLDPXNGOKMIEBFZCWVJAT")})
+    print(alphabet[UKW.forward_reading(25)])
+    EM.load_rotor(I)
+    EM.load_rotor(II)
+    EM.load_rotor(III)
+    EM.set_reflector(UKW)
 
-    })
-
-    R3 = Rotor({
-        0: 1,
-        1: 2,
-        2: 3,
-        3: 0,
-    })
-    R2 = Rotor({
-        2: 1,
-        1: 2,
-        0: 3,
-        3: 0,
-    })
-    R1 = Rotor({
-        0: 1,
-        3: 2,
-        2: 3,
-        1: 0,
-    })
-    EM.load_rotor(R1)
-    EM.load_rotor(R2)
-    EM.load_rotor(R3)
-    print(EM._rotors)
-    EM.remove_rotor(R3)
-    print(EM._rotors)
+    print("___", EM.encode(0))
+    print("___", EM.encode(0))
+    print("___", EM.encode(0))
