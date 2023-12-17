@@ -1,15 +1,25 @@
+"""Provide an object that represent an ETW (entry wheel) for an Enigma machine (the german cypher machine).
+This class is almost equal to a normal Rotor.
+Is a part of the 'Enigma' package.
+
+Review log :
+16/12/2023 → Status set to "Production"
+"""
+
 __author__ = "Marchal Florent"
 __copyright__ = "Copyright 2023, Marchal Florent"
 __credits__ = ["Marchal Florent", ]
 __license__ = "CC BY-NC-SA"
-__version__ = "0.1.0"
+__version__ = "1.0.0"
 __maintainer__ = "Marchal Florent"
 __email__ = "florent.marchal@etu.umontpellier.fr"
-__status__ = "Development"
+__status__ = "Production"
 import Rotor
 
 
 class ETW(Rotor.Rotor):
+    """A Modified Rotor that represent an entry wheel (ETW). The only difference with a normal rotor is that
+    by default this wheel can not turn."""
     @property
     def rotation(self) -> str:
         """How this rotor can turn

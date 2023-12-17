@@ -13,7 +13,8 @@ Review log :
            → <reverse_wire> is now <wire> but with their key / values couples reversed. (As it should be)
            → Add <rapid_wire> function.
 16/12/2023 → Convert <notches> to <turnovers> in order to respect rotor's nomenclature.
-           → Add __str__ method.
+           → Add <__str__> method.
+17/12/2023 → Add <is_in_turnover_position>.
 """
 
 __author__ = "Marchal Florent"
@@ -74,7 +75,7 @@ class Rotor:
 
         :param list, tuple, set turnovers:
             /!\\ Overwrite overflows
-            When Rotor's position QUIT a notch the next rotor has his position changed.
+            When Rotor's position QUIT a notch (assuming "normal" rotation) the next rotor has his position changed.
             Must be a list or a tuple or a set of integer between 0 and <wire>'s length (len(<wire>)).
 
         :param list, tuple, set overflows:
@@ -168,15 +169,20 @@ class Rotor:
             you might want to simply set <self.position> to the value that you want.
         :return bool: Do this rotor QUIT a notch.
         """
-        bool_ = self._position in self._turnovers
+        bool_ = self.is_in_turnover_position()
         if self._rotation == "normal":
             self.position += 1
         elif self._rotation == "reversed":
             self.position -= 1
         elif self._rotation == "without":
-            return True
+            return True, True
 
         return bool_
+
+    def is_in_turnover_position(self) -> bool:
+        """:return bool: Say if the current position is a turnover.
+        This function can be to now when a rotor cab turn."""
+        return self._position in self._turnovers
 
     def can_rotate(self) -> bool:
         """Say if this rotor can rotate. Note that even if this rotor can not turn, the <turn> method will not
@@ -204,7 +210,7 @@ class Rotor:
 
         :param list, tuple, set turnovers:
             /!\\ Overwrite overflows
-            When Rotor's position QUIT a notch the next rotor has his position changed.
+            When Rotor's position QUIT a notch (assuming "normal" rotation) the next rotor has his position changed.
             Must be a list or a tuple or a set of integer between 0 and <wire>'s length (len(<wire>)).
 
         :param list, tuple, set overflows:
@@ -377,7 +383,7 @@ class Rotor:
     @property
     def turnovers(self) -> set[int]:
         """:return set: a set of turnovers currently used by this rotor.
-        When Rotor's position QUIT a notch the next rotor has his
+        When Rotor's position QUIT a notch (assuming "normal" rotation) the next rotor has his
         position changed. Must be a list or a tuple or a set of integer between 0 and <wire>'s length (len(<wire>))."""
         return self._turnovers.copy()
 
@@ -394,7 +400,7 @@ class Rotor:
     @property
     def overflows(self):
         """:return set: a set of overflows currently used by this rotor.
-        When Rotor's position REACH a notch the next rotor has his
+        When Rotor's position REACH a notch (assuming "normal" rotation) the next rotor has his
         position changed. Must be a list or a tuple or a set of integer between 0 and <wire>'s length (len(<wire>))."""
         return {value + 1 for value in self._turnovers}
 

@@ -1,8 +1,15 @@
 """This file is a python materialisation of the amazing work of Paul Reuvers and Frode Weierud:
     https://www.cryptomuseum.com/crypto/enigma/tree.htm
 
-This file contain a number of class that contain rotors, selectors and entry wells related to
-a version of the Enigma machine. (Of course, only, known model are present here.)
+This file contain a number of class that contain rotors, reflectors and entry wells related to
+historical iterations of the Enigma machine. (Of course, only, known model are present here.)
+
+For each of these class, except <EnigmaContainer>, the docstring contain a link to the page of the cryptomuseum related
+to the wiring of this Enigma machine.
+
+Since (almost information) present here comes from the work of Paul Reuvers and Frode Weierud, I (Marchal Florent) do
+give them all credits related to historical and technical information related to Enigma present
+inside this file.
 """
 __author__ = "Marchal Florent"
 __credits__ = ["Paul Reuvers", "Frode Weierud"]
@@ -17,9 +24,10 @@ import ETW
 import Enigma
 
 
-class HistoricalContainer:
+class EnigmaContainer:
     """A class that is able to create a number of Rotors and EnigmaMachines related together.
-    This class is used as a toolbox in order to define EnigmaMachines used by the past with their rotors."""
+    This class is used as a toolbox in order to define Groups of EnigmaMachines / Rotors / Reflectors / ETW that
+    are supposed to be used together."""
     _alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
     @classmethod
@@ -28,8 +36,11 @@ class HistoricalContainer:
         return cls._alphabet
 
     @classmethod
-    def toWire(cls, *values) -> dict[int:int]:
+    def toWire(cls, *values, reverse: bool = False) -> dict[int:int]:
         """Convert the order of a number of values intoo a wire for Rotors using <getAlphabet>"""
+
+        if reverse:
+            return Rotor.rapid_wire(*cls._alphabet, alphabet=values)
         return Rotor.rapid_wire(*values, alphabet=cls._alphabet)
 
     @classmethod
@@ -46,7 +57,7 @@ class HistoricalContainer:
         return r_values
 
 
-class EnigmaA133(HistoricalContainer):
+class EnigmaA133(EnigmaContainer):
     """Contain the rotors used in the A-133 machine.
     All historical details came from https://www.cryptomuseum.com/crypto/enigma/wiring.htm#7."""
     _alphabet = "ABCDEFGHIJKLMNOPQRSTUVXYZÅÄÖ"
@@ -94,7 +105,7 @@ class EnigmaA133(HistoricalContainer):
                                    description="Enigma B model A-133 - Reflector UKW")
 
 
-class EnigmaD(HistoricalContainer):
+class EnigmaD(EnigmaContainer):
     """Contain the rotors used in the Enigma D machine.
     See https://www.cryptomuseum.com/crypto/enigma/wiring.htm#9"""
     @classmethod
@@ -189,7 +200,7 @@ class EnigmaD(HistoricalContainer):
         return enig
 
 
-class EnigmaI(HistoricalContainer):
+class EnigmaI(EnigmaContainer):
     """Contain the rotors used in the Enigma I machine.
     All historical details came from https://www.cryptomuseum.com/crypto/enigma/wiring.htm#10"""
 
@@ -260,7 +271,7 @@ class EnigmaI(HistoricalContainer):
                                    description="Enigma I - Reflector UKWC")
 
 
-class EnigmaNorway(HistoricalContainer):
+class EnigmaNorway(EnigmaContainer):
     """Contain the rotors used in the Norway Enigma machine.
     All historical details came from https://www.cryptomuseum.com/crypto/enigma/wiring.htm#11"""
     @classmethod
@@ -319,7 +330,7 @@ class EnigmaNorway(HistoricalContainer):
         return enig
 
 
-class A17401S(HistoricalContainer):
+class A17401S(EnigmaContainer):
     @classmethod
     def getETW(cls) -> ETW.ETW:
         """Return a ETW object that represent the entry wheel of an Enigma A-17401 S."""
@@ -364,7 +375,7 @@ class A17401S(HistoricalContainer):
         return enig
 
 
-class EnigmaM3(HistoricalContainer):
+class EnigmaM3(EnigmaContainer):
     """Contain the rotors used in the Enigma M3 machine.
     All historical details came from https://www.cryptomuseum.com/crypto/enigma/wiring.htm#13"""
     @classmethod
@@ -447,7 +458,7 @@ class EnigmaM3(HistoricalContainer):
         return enig
 
 
-class EnigmaM4(HistoricalContainer):
+class EnigmaM4(EnigmaContainer):
     """Contain the rotors used in the Enigma M4 machine.
     All historical details came from https://www.cryptomuseum.com/crypto/enigma/wiring.htm#14"""
     @classmethod
@@ -542,7 +553,7 @@ class EnigmaM4(HistoricalContainer):
         return enig
 
 
-class EnigmaG(HistoricalContainer):
+class EnigmaG(EnigmaContainer):
     """Contain the rotors used in the Enigma G machine.
     All historical details came from https://www.cryptomuseum.com/crypto/enigma/wiring.htm#15"""
     @classmethod
@@ -573,7 +584,7 @@ class EnigmaG(HistoricalContainer):
     @classmethod
     def getReflectorUKW(cls) -> Reflector.Reflector:
         """Return a Reflector object that represent the reflector UKW of an Enigma G."""
-        return Reflector.Reflector(wire=cls.toWire(*"IMETCGFRAYSQBZXWLHKDVUPOJN"),
+        return Reflector.Reflector(wire=cls.toWire(*"IMETCGFRAYSQBZXWLHKDVUPOJN"), rotation="normal",
                                    description="Enigma G - Reflector UKW")
 
     @classmethod
@@ -590,13 +601,13 @@ class EnigmaG(HistoricalContainer):
         return enig
 
 
-class EnigmaG312(HistoricalContainer):
+class EnigmaG312(EnigmaContainer):
     """Contain the rotors used in the Enigma G312 machine.
     All historical details came from https://www.cryptomuseum.com/crypto/enigma/wiring.htm#16"""
     @classmethod
     def getETW(cls) -> ETW.ETW:
         """Return a ETW object that represent the entry wheel of an Enigma G31."""
-        return ETW.ETW(wire=cls.toWire(*"QWERTZUIOASDFGHJKPYXCVBNML"),
+        return ETW.ETW(wire=cls.toWire(*"QWERTZUIOASDFGHJKPYXCVBNML", reverse=True),
                        description="Enigma G31 - ETW")
 
     @classmethod
@@ -621,7 +632,7 @@ class EnigmaG312(HistoricalContainer):
     @classmethod
     def getReflectorUKW(cls) -> Reflector.Reflector:
         """Return a Reflector object that represent the reflector UKW of an Enigma G31."""
-        return Reflector.Reflector(wire=cls.toWire(*"RULQMZJSYGOCETKWDAHNBXPVIF"),
+        return Reflector.Reflector(wire=cls.toWire(*"RULQMZJSYGOCETKWDAHNBXPVIF"), rotation="normal",
                                    description="Enigma G31 - Reflector UKW")
 
     @classmethod
@@ -638,7 +649,7 @@ class EnigmaG312(HistoricalContainer):
         return enig
 
 
-class EnigmaG260(HistoricalContainer):
+class EnigmaG260(EnigmaContainer):
     """Contain the rotors used in the Enigma G260 machine.
     All historical details came from https://www.cryptomuseum.com/crypto/enigma/wiring.htm#17"""
     @classmethod
@@ -686,7 +697,7 @@ class EnigmaG260(HistoricalContainer):
         return enig
 
 
-class EnigmaG111(HistoricalContainer):
+class EnigmaG111(EnigmaContainer):
     """Contain the rotors used in the Enigma G111 machine.
     All historical details came from https://www.cryptomuseum.com/crypto/enigma/wiring.htm#17
     Note that the wiring of the rotor III and IV are currently unknown.
@@ -737,7 +748,7 @@ class EnigmaG111(HistoricalContainer):
         return enig
 
 
-class EnigmaK(HistoricalContainer):
+class EnigmaK(EnigmaContainer):
     """Contain the rotors used in the Enigma K machine.
     All historical details came from https://www.cryptomuseum.com/crypto/enigma/wiring.htm#19"""
     @classmethod
@@ -784,7 +795,7 @@ class EnigmaK(HistoricalContainer):
         return enig
 
 
-class SwissK(HistoricalContainer):
+class SwissK(EnigmaContainer):
     """Contain the rotors used in the Swiss Enigma K variant machine.
     All historical details came from https://www.cryptomuseum.com/crypto/enigma/wiring.htm#20."""
 
@@ -832,7 +843,7 @@ class SwissK(HistoricalContainer):
                                    description="Swiss Enigma K variant - Reflector UKW")
 
 
-class EnigmaKD(HistoricalContainer):
+class EnigmaKD(EnigmaContainer):
     """Contain the rotors used in the Enigma KD variant machine.
     All historical details came from https://www.cryptomuseum.com/crypto/enigma/wiring.htm#22"""
 
@@ -882,7 +893,7 @@ class EnigmaKD(HistoricalContainer):
         return enig
 
 
-class EnigmaRailway(HistoricalContainer):
+class EnigmaRailway(EnigmaContainer):
     """Contain the rotors used in the Railway Enigma machine.
     All historical details came from https://www.cryptomuseum.com/crypto/enigma/wiring.htm#23"""
     @classmethod
@@ -928,7 +939,7 @@ class EnigmaRailway(HistoricalContainer):
                                    description="Railway Enigma - Reflector UKW")
 
 
-class EnigmaT(HistoricalContainer):
+class EnigmaT(EnigmaContainer):
     """Contain the rotors used in the Enigma T.
     All historical details came from "https://www.cryptomuseum.com/crypto/enigma/wiring.htm#25"""
     @classmethod
@@ -1005,7 +1016,7 @@ class EnigmaT(HistoricalContainer):
         return enig
 
 
-class EnigmaZ(HistoricalContainer):
+class EnigmaZ(EnigmaContainer):
     """Contain the rotors used in the Enigma Z.
     All historical details came from https://www.cryptomuseum.com/crypto/enigma/wiring.htm#26"""
 

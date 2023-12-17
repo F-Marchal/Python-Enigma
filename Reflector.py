@@ -1,11 +1,19 @@
+"""Provide an object that represent a Reflector for an Enigma machine (the german cypher machine).
+This class is a normal Rotor but with some wiring limitations.
+Is a part of the 'Enigma' package.
+
+Review log :
+16/12/2023 → Status set to "Production"
+"""
+
 __author__ = "Marchal Florent"
 __copyright__ = "Copyright 2023, Marchal Florent"
 __credits__ = ["Marchal Florent", ]
 __license__ = "CC BY-NC-SA"
-__version__ = "0.1.0"
+__version__ = "1.0.0"
 __maintainer__ = "Marchal Florent"
 __email__ = "florent.marchal@etu.umontpellier.fr"
-__status__ = "Development"
+__status__ = "Production"
 
 import Rotor
 import Errors
@@ -37,7 +45,7 @@ class Reflector(Rotor.Rotor):
             - 'normal' - This rotor turn in the normal way : Position increase at each <self.turn()>
             - 'reversed' - This rotor turn in the opposite way : Position decrease at each <self.turn()>
             - 'without' - This rotor do not turn but next rotor can turn if previous rotor turn."""
-        return super().rotation
+        return self._rotation
 
     @rotation.setter
     def rotation(self, value):
