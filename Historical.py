@@ -10,6 +10,10 @@ to the wiring of this Enigma machine.
 Since (almost information) present here comes from the work of Paul Reuvers and Frode Weierud, I (Marchal Florent) do
 give them all credits related to historical and technical information related to Enigma present
 inside this file.
+
+Review log :
+17/12/2023 → Status set to "Production"
+
 """
 __author__ = "Marchal Florent"
 __credits__ = ["Paul Reuvers", "Frode Weierud"]

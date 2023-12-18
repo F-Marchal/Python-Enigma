@@ -1,6 +1,6 @@
 # encoding=UTF-8
 """Provide an object that represent a rotors for an Enigma machine (the german cypher machine).
-This class can be used as a reflector.
+This class can be used as a reflector or an ETW.
 Is a part of the 'Enigma' package.
 
 You can find two example at the bottom of this file.
@@ -21,7 +21,7 @@ __author__ = "Marchal Florent"
 __copyright__ = "Copyright 2023, Marchal Florent"
 __credits__ = ["Marchal Florent", ]
 __license__ = "CC BY-NC-SA"
-__version__ = "1.3.0"
+__version__ = "1.3.1"
 __maintainer__ = "Marchal Florent"
 __email__ = "florent.marchal@etu.umontpellier.fr"
 __status__ = "Production"
