@@ -7,10 +7,10 @@ You will find in the file “Historical.py” Rotor, Reflectors (UKW) and Machin
 
 # Objects 
 - Rotor : Is made to emulate a rotors used by Enigma:
--- ETW : A Special kind of Rotor that represent the entry wheels (the element that link the keyboard and the rotor)
--- Reflector : A Special kind of rotor that can be used as reflector (UKW). The wiring of this king of rotor has to be "symmetrical".
+- ETW : A Special kind of Rotor that represent the entry wheels (the element that link the keyboard and the rotor)
+- Reflector : A Special kind of rotor that can be used as reflector (UKW). The wiring of this king of rotor has to be "symmetrical".
 
--- EnigmaMachine : The main object of this package. This object require the creation of Rotors object to  work as intended.
+- EnigmaMachine : The main object of this package. This object require the creation of Rotors object to  work as intended.
 
 # Future goals :
 - Improve docString clarity
